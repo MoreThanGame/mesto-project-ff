@@ -28,15 +28,6 @@ initialCards.forEach(element => {
     addCard(element.name, element.link, deleteCard);
 });
 
-// addButton.addEventListener('click', function() {
-//     const name = document.querySelector('.popup__input_type_card-name');
-//     const link = document.querySelector('.popup__input_type_url');
-
-//     addCard(name.value, link.value);
-//     name.value = '';
-//     link.value = '';
-// });
-
 // @todo: Функция удаления карточки
 
 // @todo: Вывести карточки на страницу
