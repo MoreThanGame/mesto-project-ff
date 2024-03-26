@@ -1,4 +1,3 @@
-
 export function openModal(element) {
   element.classList.add("popup_is-opened", "popup_is-animated");
   document.addEventListener("keydown", closeModalEsc);

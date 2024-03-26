@@ -1,4 +1,5 @@
 // Добавление карточек из массива
+import { openClickedImagePopup } from "../scripts/index.js";
 
 export function addCard(cardData) {
   const { nameValue, linkValue, deleteCard } = cardData;
@@ -11,6 +12,8 @@ export function addCard(cardData) {
   cardElement.querySelector(".card__title").textContent = nameValue;
   cardElement.querySelector(".card__image").src = linkValue;
   cardElement.querySelector(".card__image").alt = `Фото ${nameValue}`;
+
+  cardElement.addEventListener("click", openClickedImagePopup);
 
   deleteButton.addEventListener("click", deleteCard);
   likeButton.addEventListener("click", () => toggleLike(likeButton));
