@@ -1,19 +1,16 @@
 // Добавление карточек из массива
-import { openClickedImagePopup } from "../scripts/index.js";
-
-export function addCard(cardData) {
-  const { nameValue, linkValue, deleteCard } = cardData;
-
+export function addCard({ name, link, deleteCard, openImagePopup }) {
   const cardTemplate = document.querySelector("#card-template").content;
   const cardElement = cardTemplate.querySelector(".card").cloneNode(true);
   const deleteButton = cardElement.querySelector(".card__delete-button");
   const likeButton = cardElement.querySelector(".card__like-button");
-
-  cardElement.querySelector(".card__title").textContent = nameValue;
-  cardElement.querySelector(".card__image").src = linkValue;
-  cardElement.querySelector(".card__image").alt = `Фото ${nameValue}`;
-
-  cardElement.addEventListener("click", openClickedImagePopup);
+  const imageCard = cardElement.querySelector(".card__image");
+  cardElement.querySelector(".card__title").textContent = name;
+  imageCard.src = link;
+  imageCard.alt = `Фото ${name}`;
+  imageCard.addEventListener("click", () =>
+    openImagePopup({ name, link })
+  );
 
   deleteButton.addEventListener("click", deleteCard);
   likeButton.addEventListener("click", () => toggleLike(likeButton));
@@ -22,7 +19,6 @@ export function addCard(cardData) {
 }
 
 // Удаление карточек
-
 export const deleteCard = (evt) => {
   evt.target.closest(".card").remove();
 };

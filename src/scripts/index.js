@@ -34,15 +34,16 @@ description.value = "Исследователь океана";
 const formNewPlace = document.forms["new-place"];
 
 // Добавление массива карточек
-
-initialCards.forEach((element) => {
+function renderCard({ name, link }) {
   const newCard = addCard({
-    nameValue: element.name,
-    linkValue: element.link,
-    deleteCard: deleteCard,
+    name,
+    link,
+    deleteCard,
+    openImagePopup,
   });
   placesList.append(newCard);
-});
+}
+initialCards.forEach(renderCard);
 
 // Открыть модальное окно
 
@@ -62,7 +63,6 @@ profileAddButton.addEventListener("click", function () {
 });
 
 // Закрыть модальное окно
-
 popupCloseButton.forEach((item) => {
   item.addEventListener("click", (evt) => {
     closeModal(evt.target.closest(".popup"));
@@ -100,14 +100,7 @@ function addNewCard(evt) {
 
   const cardName = cardNameInput.value;
   const cardLink = cardLinkInput.value;
-  const cardData = {
-    nameValue: cardName,
-    linkValue: cardLink,
-    deleteCard: deleteCard,
-  };
-  const newCardElement = addCard(cardData);
-  placesList.prepend(newCardElement);
-  newCardElement.addEventListener("click", openClickedImagePopup);
+  renderCard({ name: cardName, link: cardLink });
 
   closeModal(popupNewCard);
 }
@@ -116,16 +109,7 @@ formNewPlace.addEventListener("submit", addNewCard);
 
 // Открытие попапа с картинкой
 
-export function openClickedImagePopup(evt) {
-  const clickedElement = evt.target.closest(".card__image");
-  if (clickedElement) {
-    const link = clickedElement.src;
-    const name = clickedElement.alt;
-    openImagePopup(link, name);
-  }
-}
-
-function openImagePopup(link, name) {
+function openImagePopup({ name, link }) {
   popupImageElement.src = link;
   popupImageElement.alt = name;
   popupCaptionElement.textContent = name;
