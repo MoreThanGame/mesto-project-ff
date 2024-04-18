@@ -1,4 +1,3 @@
-
 import { removeLikeApi, sendLikeApi } from "../scripts/api.js";
 
 // Добавление карточек из массива

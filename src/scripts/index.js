@@ -2,11 +2,7 @@ import "../pages/index.css";
 import { addCard, deleteCard } from "../components/card.js";
 import { toggleLike } from "../components/card.js";
 import { openModal, closeModal } from "../components/modal.js";
-import {
-  hideInputError,
-  setEventListeners,
-  toggleButtonState,
-} from "../components/validation.js";
+import { enableValidation, clearValidation } from "../components/validation.js";
 import {
   getUserDataApi,
   getInitialCardsApi,
@@ -15,7 +11,6 @@ import {
   deletePopupCardApi,
   updateUserAvatarApi,
 } from "./api.js";
-import { error } from "jquery";
 
 const content = document.querySelector(".content");
 const placesList = content.querySelector(".places__list");
@@ -50,11 +45,23 @@ export const cardNameInput = document.querySelector(
 export const cardLinkInput = document.querySelector(
   ".popup_type_new-card .popup__input_type_url"
 );
-const profileImageContainer = document.querySelector(".profile__image-container");
+const profileImageContainer = document.querySelector(
+  ".profile__image-container"
+);
 const formUpdateAvatar = document.forms["update-avatar-form"];
 const avatarLinkInput = formUpdateAvatar.elements["avatar-link"];
+const deleteCardForm = popupDeleteCard.querySelector(".popup__form");
+let currentCardId = null;
+const validationConfig = {
+  formSelector: ".popup__form",
+  inputSelector: ".popup__input",
+  submitButtonSelector: ".popup__button",
+  inactiveButtonClass: "popup__button_disabled",
+  inputErrorClass: "popup__input_type_error",
+  errorClass: "popup__error_visible",
+};
 
-function renderCard(cardData, myUserId) {
+function renderCard(cardData, myUserId, prepend = false) {
   const newCard = addCard({
     name: cardData.name,
     link: cardData.link,
@@ -69,32 +76,42 @@ function renderCard(cardData, myUserId) {
 
   const likeCountElement = newCard.querySelector(".card__like-count");
   likeCountElement.textContent = cardData.likes.length;
-  placesList.append(newCard);
 
   if (cardData.owner._id !== myUserId) {
     const deleteButton = newCard.querySelector(".card__delete-button");
     deleteButton.classList.add("card__delete-button-hidden");
   } else {
     const deleteButton = newCard.querySelector(".card__delete-button");
-    deleteButton.addEventListener("click", () => openDeletePopup(cardData._id));
+    deleteButton.addEventListener("click", () =>
+      confirmDeleteCard(cardData._id)
+    );
+  }
+
+  if (prepend) {
+    placesList.prepend(newCard);
+  } else {
+    placesList.append(newCard);
   }
 }
 
-function openDeletePopup(cardId) {
+function confirmDeleteCard(cardId) {
+  currentCardId = cardId;
   openModal(popupDeleteCard);
-  const deleteCardForm = popupDeleteCard.querySelector(".popup__form");
-  deleteCardForm.addEventListener("submit", (evt) => {
-    evt.preventDefault();
-    deleteCardHandler(cardId);
-  });
 }
 
-function deleteCardHandler(cardId) {
+deleteCardForm.addEventListener("submit", (evt) => {
+  evt.preventDefault();
+  if (currentCardId) {
+    deleteCardHandler(currentCardId);
+    currentCardId = null;
+  }
+});
+
+function deleteCardHandler(cardId, cardElement) {
   deletePopupCardApi(cardId)
     .then(() => {
-      const deletedCard = document.querySelector(`[data-card-id="${cardId}"]`);
-      if (deletedCard) {
-        deletedCard.remove();
+      if (cardElement) {
+        cardElement.remove();
       }
       closeModal(popupDeleteCard);
     })
@@ -103,38 +120,37 @@ function deleteCardHandler(cardId) {
     });
 }
 
-profileImageContainer.addEventListener("click", function() {
-    openModal(popupAvatar);
-    clearValidation(popupAvatar, validationConfig);
+profileImageContainer.addEventListener("click", function () {
+  openModal(popupAvatar);
+  clearValidation(popupAvatar, validationConfig);
 });
 
-formUpdateAvatar.addEventListener("submit", function(event) {
+formUpdateAvatar.addEventListener("submit", function (event) {
   event.preventDefault();
   setLoadButton(formUpdateAvatar, true);
   updateUserAvatarApi(avatarLinkInput.value)
-      .then((data) => {
-        setLoadButton(formUpdateAvatar, false);
-          const avatarImage = document.querySelector(".profile__image");
-          avatarImage.style.backgroundImage = `url(${avatarLinkInput.value})`;
+    .then((data) => {
+      setLoadButton(formUpdateAvatar, false);
+      const avatarImage = document.querySelector(".profile__image");
+      avatarImage.style.backgroundImage = `url(${avatarLinkInput.value})`;
 
-          closeModal(popupAvatar);
-      })
-      .catch((error) => {
-          console.error("Ошибка при обновлении аватара:", error);
-          setLoadButton(formUpdateAvatar, false);
-      });
+      closeModal(popupAvatar);
+    })
+    .catch((error) => {
+      console.error("Ошибка при обновлении аватара:", error);
+      setLoadButton(formUpdateAvatar, false);
+    });
 });
 
 function setLoadButton(formElement, isLoading) {
-const submitButton = formElement.querySelector('.popup__button');
-if(isLoading) {
-  submitButton.textContent = 'Сохранение...';
-  submitButton.setAttribute('disabled', true);
-} else {
-  submitButton.textContent = 'Сохранить';
-  submitButton.removeAttribute('disabled');
-}
-
+  const submitButton = formElement.querySelector(".popup__button");
+  if (isLoading) {
+    submitButton.textContent = "Сохранение...";
+    submitButton.setAttribute("disabled", true);
+  } else {
+    submitButton.textContent = "Сохранить";
+    submitButton.removeAttribute("disabled");
+  }
 }
 
 Promise.all([getUserDataApi(), getInitialCardsApi()])
@@ -148,16 +164,6 @@ Promise.all([getUserDataApi(), getInitialCardsApi()])
   })
   .catch((error) => {
     console.log("Ошибка:", error);
-  });
-
-getInitialCardsApi()
-  .then((cards) => {
-    cards.forEach((cardData) => {
-      renderCard(cardData);
-    });
-  })
-  .catch((err) => {
-    console.log("Ошибка при получении карточек:", err);
   });
 
 // Открыть модальное окно
@@ -203,20 +209,20 @@ function editFormProfileSubmit(evt) {
   const nameValue = nameInput.value;
   const jobValue = jobInput.value;
 
-  nameElement.textContent = nameValue;
-  jobElement.textContent = jobValue;
-
   setLoadButton(formEditProfile, true);
 
   sendUserDataApi()
-  .then(() => {
-    setLoadButton(formEditProfile, false);
-    closeModal(popupEdit);
-  })
-  .catch((error) => {
-    console.error("Ошибка при отправке данных:", error);
-    setLoadButton(formEditProfile, false);
-  });
+    .then((response) => {
+      nameElement.textContent = nameValue;
+      jobElement.textContent = jobValue;
+      closeModal(popupEdit);
+      setLoadButton(formEditProfile, false);
+      console.log("Данные пользователя обновлены:", response);
+    })
+    .catch((error) => {
+      console.error("Ошибка при отправке данных:", error);
+      setLoadButton(formEditProfile, false);
+    });
 }
 
 formEditProfile.addEventListener("submit", editFormProfileSubmit);
@@ -229,7 +235,7 @@ function addNewCard(evt) {
   sendNewCardApi()
     .then((newCard) => {
       setLoadButton(formNewPlace, false);
-      renderCard(newCard);
+      renderCard(newCard, null, true);
       closeModal(popupNewCard);
     })
     .catch((err) => {
@@ -250,40 +256,5 @@ function openImagePopup({ name, link }) {
 }
 
 // Валидация форм
-
-function enableValidation(validationConfig) {
-  const formList = Array.from(
-    document.querySelectorAll(validationConfig.formSelector)
-  );
-  formList.forEach((formElement) => {
-    setEventListeners(formElement, validationConfig);
-    formElement.addEventListener("submit", function (evt) {
-      evt.preventDefault();
-    });
-  });
-}
-
-function clearValidation(formElement, validationConfig) {
-  const inputList = Array.from(
-    formElement.querySelectorAll(validationConfig.inputSelector)
-  );
-  inputList.forEach((inputElement) => {
-    hideInputError(inputElement, validationConfig);
-  });
-  toggleButtonState(
-    inputList,
-    formElement.querySelector(validationConfig.submitButtonSelector),
-    validationConfig
-  );
-}
-
-const validationConfig = {
-  formSelector: ".popup__form",
-  inputSelector: ".popup__input",
-  submitButtonSelector: ".popup__button",
-  inactiveButtonClass: "popup__button_disabled",
-  inputErrorClass: "popup__input_type_error",
-  errorClass: "popup__error_visible",
-};
 
 enableValidation(validationConfig);

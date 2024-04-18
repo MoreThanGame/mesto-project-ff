@@ -64,3 +64,29 @@ export function toggleButtonState(inputList, buttonElement, validationConfig) {
     buttonElement.classList.remove(validationConfig.inactiveButtonClass);
   }
 }
+
+export function enableValidation(validationConfig) {
+  const formList = Array.from(
+    document.querySelectorAll(validationConfig.formSelector)
+  );
+  formList.forEach((formElement) => {
+    setEventListeners(formElement, validationConfig);
+    formElement.addEventListener("submit", function (evt) {
+      evt.preventDefault();
+    });
+  });
+}
+
+export function clearValidation(formElement, validationConfig) {
+  const inputList = Array.from(
+    formElement.querySelectorAll(validationConfig.inputSelector)
+  );
+  inputList.forEach((inputElement) => {
+    hideInputError(inputElement, validationConfig);
+  });
+  toggleButtonState(
+    inputList,
+    formElement.querySelector(validationConfig.submitButtonSelector),
+    validationConfig
+  );
+}

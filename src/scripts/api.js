@@ -154,4 +154,4 @@ export const updateUserAvatarApi = (avatarLinkInput) => {
     .catch((err) => {
       console.log("Ошибка при обновлении аватара пользователя:", err);
     });
-}
+};
