@@ -51,7 +51,9 @@ const profileImageContainer = document.querySelector(
 const formUpdateAvatar = document.forms["update-avatar-form"];
 const avatarLinkInput = formUpdateAvatar.elements["avatar-link"];
 const deleteCardForm = popupDeleteCard.querySelector(".popup__form");
+let myUserId = null;
 let currentCardId = null;
+
 const validationConfig = {
   formSelector: ".popup__form",
   inputSelector: ".popup__input",
@@ -61,31 +63,14 @@ const validationConfig = {
   errorClass: "popup__error_visible",
 };
 
-function renderCard(cardData, myUserId, prepend = false) {
+function renderCard(cardData, prepend = false) {
   const newCard = addCard({
-    name: cardData.name,
-    link: cardData.link,
-    deleteCard: cardData.owner._id === myUserId ? deleteCard : null,
+    data: cardData,
+    confirmDeleteCard:
+      cardData.owner._id === myUserId ? confirmDeleteCard : null,
     openImagePopup,
+    userId: myUserId,
   });
-
-  const likeButton = newCard.querySelector(".card__like-button");
-  likeButton.addEventListener("click", () =>
-    toggleLike(likeButton, cardData._id)
-  );
-
-  const likeCountElement = newCard.querySelector(".card__like-count");
-  likeCountElement.textContent = cardData.likes.length;
-
-  if (cardData.owner._id !== myUserId) {
-    const deleteButton = newCard.querySelector(".card__delete-button");
-    deleteButton.classList.add("card__delete-button-hidden");
-  } else {
-    const deleteButton = newCard.querySelector(".card__delete-button");
-    deleteButton.addEventListener("click", () =>
-      confirmDeleteCard(cardData._id)
-    );
-  }
 
   if (prepend) {
     placesList.prepend(newCard);
@@ -102,13 +87,15 @@ function confirmDeleteCard(cardId) {
 deleteCardForm.addEventListener("submit", (evt) => {
   evt.preventDefault();
   if (currentCardId) {
-    deleteCardHandler(currentCardId);
-    currentCardId = null;
+    deleteCardHandler(currentCardId).then(() => {
+      deleteCard(currentCardId);
+      currentCardId = null;
+    });
   }
 });
 
 function deleteCardHandler(cardId, cardElement) {
-  deletePopupCardApi(cardId)
+  return deletePopupCardApi(cardId)
     .then(() => {
       if (cardElement) {
         cardElement.remove();
@@ -157,9 +144,9 @@ Promise.all([getUserDataApi(), getInitialCardsApi()])
   .then(([userData, initialCards]) => {
     console.log("Данные пользователя:", userData);
     console.log("Начальные карточки:", initialCards);
-    const myUserId = userData._id;
+    myUserId = userData._id;
     initialCards.forEach((cardData) => {
-      renderCard(cardData, myUserId);
+      renderCard(cardData);
     });
   })
   .catch((error) => {
@@ -235,7 +222,7 @@ function addNewCard(evt) {
   sendNewCardApi()
     .then((newCard) => {
       setLoadButton(formNewPlace, false);
-      renderCard(newCard, null, true);
+      renderCard(newCard, true);
       closeModal(popupNewCard);
     })
     .catch((err) => {
